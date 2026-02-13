@@ -327,8 +327,14 @@ function genericBlockMath(
 
     const token = state.push('math_block', 'math', 0);
     token.block = true;
-    // If firstLine is empty (delimiter on its own line), add newline to preserve structure
-    const firstLinePart = firstLine && firstLine.trim() ? firstLine + '\n' : (firstLine !== undefined && firstLine.length === 0 ? '\n' : '');
+    // Handle first line content
+    let firstLinePart = '';
+    if (firstLine && firstLine.trim()) {
+        firstLinePart = firstLine + '\n';
+    } else if (firstLine !== undefined && firstLine.length === 0) {
+        // Delimiter on its own line, preserve structure with newline
+        firstLinePart = '\n';
+    }
     token.content = firstLinePart
         + state.getLines(start + 1, next, state.tShift[start], true)
         + (lastLine && lastLine.trim() ? lastLine : '');
@@ -675,10 +681,11 @@ export default function (md: import('markdown-it'), options?: MarkdownKatexOptio
     // so we can catch \( and \[ before they are processed by the escape rule
     const sortedDelimiters = [...delimiters].sort((a, b) => b.left.length - a.left.length);
     
+    let delimiterIndex = 0;
     for (const delim of sortedDelimiters) {
         if (!delim.display && delim.left.startsWith('\\')) {
             // Only register backslash delimiters (like \( and \[) before escape
-            const ruleName = `math_inline_${delim.left.replace(/\\/g, 'backslash')}`;
+            const ruleName = `math_inline_delim_${delimiterIndex++}`;
             md.inline.ruler.before('escape', ruleName, (state, silent) => {
                 return genericInlineMath(state, silent, delim.left, delim.right, false);
             });
