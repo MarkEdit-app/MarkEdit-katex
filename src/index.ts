@@ -692,9 +692,17 @@ export default function (md: import('markdown-it'), options?: MarkdownKatexOptio
         }
     }
     
-    // Keep original parsers for $ and $$ - they have special validation logic
-    md.inline.ruler.after('escape', 'math_inline', inlineMath);
-    md.inline.ruler.after('escape', 'math_inline_block', inlineMathBlock);
+    // Register $ and $$ parsers if they're in the delimiter list
+    // These have special validation logic
+    const hasDollarDelim = sortedDelimiters.some(d => !d.display && d.left === '$');
+    const hasDoubleDollarDelim = sortedDelimiters.some(d => d.display && d.left === '$$');
+    
+    if (hasDollarDelim) {
+        md.inline.ruler.after('escape', 'math_inline', inlineMath);
+    }
+    if (hasDoubleDollarDelim) {
+        md.inline.ruler.after('escape', 'math_inline_block', inlineMathBlock);
+    }
     
     if (enableBareBlocks) {
         md.inline.ruler.before('text', 'math_inline_bare_block', inlineBareBlock);
@@ -714,8 +722,11 @@ export default function (md: import('markdown-it'), options?: MarkdownKatexOptio
             }
         }
         
-        // Fallback to original blockMath for $$ which has special handling
-        return blockMath(state, start, end, silent);
+        // Use blockMath for $$ if it's in the delimiter list
+        if (hasDoubleDollarDelim) {
+            return blockMath(state, start, end, silent);
+        }
+        return false;
     }, {
         alt: ['paragraph', 'reference', 'blockquote', 'list']
     });
