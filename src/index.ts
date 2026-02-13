@@ -266,7 +266,7 @@ function genericBlockMath(
     // Check for single line expressions
     if (firstLine.includes(closeDelim)) {
         const closePos = firstLine.indexOf(closeDelim);
-        if (closePos === firstLine.length - closeDelim.length) {
+        if (closePos !== -1 && closePos === firstLine.length - closeDelim.length) {
             // Single line block expression like \[x\] or $$x$$
             // Preserve spacing behavior like the original - trim then slice
             firstLine = firstLine.trim().slice(0, -closeDelim.length);
