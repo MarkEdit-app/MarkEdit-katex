@@ -47,6 +47,8 @@ function normalizeWithStub(text) {
 
 runTest(path.join(__dirname, 'fixtures', 'default.txt'), mdIt({ html: true }).use(mdk,));
 
+runTest(path.join(__dirname, 'fixtures', 'delimiters.txt'), mdIt({ html: true }).use(mdk,));
+
 runTest(path.join(__dirname, 'fixtures', 'bare.txt'), mdIt().use(mdk, { enableBareBlocks: true }));
 
 runTest(path.join(__dirname, 'fixtures', 'math-in-html.txt'), mdIt({ html: true }).use(mdk, { enableMathBlockInHtml: true, enableMathInlineInHtml: true }));

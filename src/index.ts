@@ -3,7 +3,15 @@ import type * as StateBlock from 'markdown-it/lib/rules_block/state_block';
 import type StateCore from 'markdown-it/lib/rules_core/state_core';
 import type * as StateInline from 'markdown-it/lib/rules_inline/state_inline';
 import type * as Token from 'markdown-it/lib/token';
-import { MarkdownKatexOptions } from '../types';
+import { MarkdownKatexOptions, MathDelimiter } from '../types';
+
+// Default delimiters
+const DEFAULT_DELIMITERS: MathDelimiter[] = [
+    { left: '$$', right: '$$', display: true },
+    { left: '\\[', right: '\\]', display: true },
+    { left: '$', right: '$', display: false },
+    { left: '\\(', right: '\\)', display: false },
+];
 
 /**
  * Test if potential opening or closing delimiter
@@ -42,6 +50,35 @@ function isWordCharacterOrNumber(char: string): boolean {
     return /^[\w\d]$/u.test(char);
 }
 
+/**
+ * Find the end of a math expression with a specific closing delimiter
+ * Handles escaped delimiters and brace counting
+ */
+function findEndOfMath(closingDelim: string, text: string, startIndex: number): number {
+    let index = startIndex;
+    let braceLevel = 0;
+    const delimLength = closingDelim.length;
+
+    while (index < text.length) {
+        const character = text[index];
+
+        if (braceLevel <= 0 &&
+            text.slice(index, index + delimLength) === closingDelim) {
+            return index;
+        } else if (character === "\\") {
+            index++;
+        } else if (character === "{") {
+            braceLevel++;
+        } else if (character === "}") {
+            braceLevel--;
+        }
+
+        index++;
+    }
+
+    return -1;
+}
+
 function isValidBlockDelim(state: StateInline, pos: number): { readonly can_open: boolean; readonly can_close: boolean; } {
     const prevChar = state.src[pos - 1];
     const char = state.src[pos];
@@ -58,6 +95,64 @@ function isValidBlockDelim(state: StateInline, pos: number): { readonly can_open
     }
 
     return { can_open: false, can_close: false };
+}
+
+/**
+ * Generic inline math parser for delimiters with different open/close patterns
+ */
+function genericInlineMath(
+    state: StateInline,
+    silent: boolean,
+    openDelim: string,
+    closeDelim: string,
+    display: boolean
+): boolean {
+    // Check if we start with the opening delimiter
+    if (state.src.slice(state.pos, state.pos + openDelim.length) !== openDelim) {
+        return false;
+    }
+
+    // For \( and \[, check if the backslash itself is escaped (preceded by another backslash)
+    if (openDelim.startsWith('\\')) {
+        const prevChar = state.src[state.pos - 1];
+        if (prevChar === '\\') {
+            // The delimiter's backslash is escaped (\\(), so don't parse
+            return false;
+        }
+    }
+
+    const lastToken = state.tokens.at(-1);
+    if (lastToken?.type === 'html_inline') {
+        // We may be inside of inline html
+        if (/^<\w+.+[^/]>$/.test(lastToken.content)) {
+            return false;
+        }
+    }
+
+    const start = state.pos + openDelim.length;
+    const match = findEndOfMath(closeDelim, state.src, start);
+
+    // No closing delimiter found
+    if (match === -1) {
+        return false;
+    }
+
+    // Check if we have empty content
+    if (match === start) {
+        return false;
+    }
+
+    if (!silent) {
+        const token = state.push(display ? 'math_block' : 'math_inline', 'math', 0);
+        token.markup = openDelim;
+        token.content = state.src.slice(start, match);
+        if (display) {
+            token.block = true;
+        }
+    }
+
+    state.pos = match + closeDelim.length;
+    return true;
 }
 
 function inlineMath(state: StateInline, silent: boolean): boolean {
@@ -139,6 +234,106 @@ function inlineMath(state: StateInline, silent: boolean): boolean {
     }
 
     state.pos = match + 1;
+    return true;
+}
+
+/**
+ * Generic block math parser for delimiters with different open/close patterns
+ */
+function genericBlockMath(
+    state: StateBlock,
+    start: number,
+    end: number,
+    silent: boolean,
+    openDelim: string,
+    closeDelim: string
+): boolean {
+    let pos = state.bMarks[start] + state.tShift[start];
+    let max = state.eMarks[start];
+
+    if (pos + openDelim.length > max) {
+        return false;
+    }
+
+    const marker = state.src.slice(pos, pos + openDelim.length);
+    if (marker !== openDelim) {
+        return false;
+    }
+
+    pos += openDelim.length;
+    let firstLine = state.src.slice(pos, max);
+
+    // Check for single line expressions
+    if (firstLine.includes(closeDelim)) {
+        const closePos = firstLine.indexOf(closeDelim);
+        if (closePos === firstLine.length - closeDelim.length) {
+            // Single line block expression like \[x\] or $$x$$
+            // Preserve spacing behavior like the original - trim then slice
+            firstLine = firstLine.trim().slice(0, -closeDelim.length);
+            
+            if (silent) {
+                return true;
+            }
+
+            const token = state.push('math_block', 'math', 0);
+            token.block = true;
+            token.content = firstLine + '\n';
+            token.map = [start, start + 1];
+            token.markup = openDelim;
+            state.line = start + 1;
+            return true;
+        } else {
+            // Closing delimiter is in the middle, not at the end
+            return false;
+        }
+    }
+
+    if (silent) {
+        return true;
+    }
+
+    // Multi-line block
+    let next = start;
+    let lastLine: string | undefined;
+    let found = false;
+
+    for (next = start; !found;) {
+        next++;
+        if (next >= end) {
+            break;
+        }
+
+        pos = state.bMarks[next] + state.tShift[next];
+        max = state.eMarks[next];
+
+        if (pos < max && state.tShift[next] < state.blkIndent) {
+            // non-empty line with negative indent should stop
+            break;
+        }
+
+        const line = state.src.slice(pos, max);
+        if (line.includes(closeDelim)) {
+            const closePos = line.indexOf(closeDelim);
+            lastLine = line.slice(0, closePos);
+            found = true;
+        }
+    }
+
+    if (!found) {
+        return false;
+    }
+
+    state.line = next + 1;
+
+    const token = state.push('math_block', 'math', 0);
+    token.block = true;
+    // If firstLine is empty (delimiter on its own line), add newline to preserve structure
+    const firstLinePart = firstLine && firstLine.trim() ? firstLine + '\n' : (firstLine !== undefined && firstLine.length === 0 ? '\n' : '');
+    token.content = firstLinePart
+        + state.getLines(start + 1, next, state.tShift[start], true)
+        + (lastLine && lastLine.trim() ? lastLine : '');
+    token.map = [start, state.line];
+    token.markup = openDelim;
     return true;
 }
 
@@ -473,10 +668,27 @@ export default function (md: import('markdown-it'), options?: MarkdownKatexOptio
     const enableMathBlockInHtml = options?.enableMathBlockInHtml;
     const enableMathInlineInHtml = options?.enableMathInlineInHtml;
     const enableFencedBlocks = options?.enableFencedBlocks;
+    const delimiters = options?.delimiters ?? DEFAULT_DELIMITERS;
 
     // #region Parsing
+    // Register inline parsers for backslash delimiters BEFORE escape rule
+    // so we can catch \( and \[ before they are processed by the escape rule
+    const sortedDelimiters = [...delimiters].sort((a, b) => b.left.length - a.left.length);
+    
+    for (const delim of sortedDelimiters) {
+        if (!delim.display && delim.left.startsWith('\\')) {
+            // Only register backslash delimiters (like \( and \[) before escape
+            const ruleName = `math_inline_${delim.left.replace(/\\/g, 'backslash')}`;
+            md.inline.ruler.before('escape', ruleName, (state, silent) => {
+                return genericInlineMath(state, silent, delim.left, delim.right, false);
+            });
+        }
+    }
+    
+    // Keep original parsers for $ and $$ - they have special validation logic
     md.inline.ruler.after('escape', 'math_inline', inlineMath);
     md.inline.ruler.after('escape', 'math_inline_block', inlineMathBlock);
+    
     if (enableBareBlocks) {
         md.inline.ruler.before('text', 'math_inline_bare_block', inlineBareBlock);
     }
@@ -485,6 +697,17 @@ export default function (md: import('markdown-it'), options?: MarkdownKatexOptio
         if (enableBareBlocks && blockBareMath(state, start, end, silent)) {
             return true;
         }
+        
+        // Try each backslash display delimiter (like \[ \])
+        for (const delim of sortedDelimiters) {
+            if (delim.display && delim.left.startsWith('\\')) {
+                if (genericBlockMath(state, start, end, silent, delim.left, delim.right)) {
+                    return true;
+                }
+            }
+        }
+        
+        // Fallback to original blockMath for $$ which has special handling
         return blockMath(state, start, end, silent);
     }, {
         alt: ['paragraph', 'reference', 'blockquote', 'list']
