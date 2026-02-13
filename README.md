@@ -1,8 +1,8 @@
 # Markdown-it Katex
 
-Markdown It plugin that adds [KaTeX](https://github.com/Khan/KaTeX) rendering. This is used by VS Code to render math in Markdown.
+Markdown It plugin that adds [KaTeX](https://github.com/Khan/KaTeX) rendering. This is used by [MarkEdit-preview](https://github.com/MarkEdit-app/MarkEdit-preview) to render math in Markdown.
 
-Originally forked from [@iktakahiro/markdown-it-katex](https://github.com/iktakahiro/markdown-it-katex)
+Originally forked from [@microsoft/vscode-markdown-it-katex](https://github.com/microsoft/vscode-markdown-it-katex)
 
 ## Usage
 
@@ -15,14 +15,14 @@ npm install markdown-it
 Install the plugin
 
 ```bash
-npm install @vscode/markdown-it-katex
+npm install markedit-katex
 ```
 
 Use it in your javascript
 
 ```javascript
 const md = require("markdown-it")();
-const mk = require("@vscode/markdown-it-katex").default;
+const mk = require("markedit-katex").default;
 
 md.use(mk);
 
@@ -86,7 +86,7 @@ $$\begin{array}{c}
 
 ```js
 import MarkdownIt from "markdown-it";
-import mk from "@vscode/markdown-it-katex";
+import mk from "markedit-katex";
 import katex from "katex";
 
 // Load some katex extensions

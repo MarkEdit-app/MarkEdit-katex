@@ -16,7 +16,7 @@ resources:
 
 parameters:
   - name: publishPackage
-    displayName: 🚀 Publish @vscode/markdown-it-katex
+    displayName: 🚀 Publish markedit-katex
     type: boolean
     default: false
 
