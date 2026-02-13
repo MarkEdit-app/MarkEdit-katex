@@ -677,14 +677,24 @@ export default function (md: import('markdown-it'), options?: MarkdownKatexOptio
     const delimiters = options?.delimiters ?? DEFAULT_DELIMITERS;
 
     // #region Parsing
-    // Register inline parsers for backslash delimiters BEFORE escape rule
-    // so we can catch \( and \[ before they are processed by the escape rule
+    // Register inline parsers BEFORE escape rule to handle delimiters that contain backslashes
+    // This allows support for various delimiter formats like \(, \f$, etc.
     const sortedDelimiters = [...delimiters].sort((a, b) => b.left.length - a.left.length);
+    
+    // Check which special delimiters are in the list
+    const hasDollarDelim = sortedDelimiters.some(d => !d.display && d.left === '$');
+    const hasDoubleDollarDelim = sortedDelimiters.some(d => d.display && d.left === '$$');
     
     let delimiterIndex = 0;
     for (const delim of sortedDelimiters) {
-        if (!delim.display && delim.left.startsWith('\\')) {
-            // Only register backslash delimiters (like \( and \[) before escape
+        // Skip $ and $$ delimiters - they have special handlers registered later
+        if ((delim.left === '$' && !delim.display) || (delim.left === '$$' && delim.display)) {
+            continue;
+        }
+        
+        if (!delim.display) {
+            // Register all inline delimiters (not just backslash ones) before escape
+            // to support various delimiter formats (e.g., \(, \f$, $`, etc.)
             const ruleName = `math_inline_delim_${delimiterIndex++}`;
             md.inline.ruler.before('escape', ruleName, (state, silent) => {
                 return genericInlineMath(state, silent, delim.left, delim.right, false);
@@ -694,8 +704,6 @@ export default function (md: import('markdown-it'), options?: MarkdownKatexOptio
     
     // Register $ and $$ parsers if they're in the delimiter list
     // These have special validation logic
-    const hasDollarDelim = sortedDelimiters.some(d => !d.display && d.left === '$');
-    const hasDoubleDollarDelim = sortedDelimiters.some(d => d.display && d.left === '$$');
     
     if (hasDollarDelim) {
         md.inline.ruler.after('escape', 'math_inline', inlineMath);
@@ -713,9 +721,14 @@ export default function (md: import('markdown-it'), options?: MarkdownKatexOptio
             return true;
         }
         
-        // Try each backslash display delimiter (like \[ \])
+        // Try each custom display delimiter (excluding $$)
         for (const delim of sortedDelimiters) {
-            if (delim.display && delim.left.startsWith('\\')) {
+            // Skip $$ delimiter - it has a special handler below
+            if (delim.left === '$$' && delim.display) {
+                continue;
+            }
+            
+            if (delim.display) {
                 if (genericBlockMath(state, start, end, silent, delim.left, delim.right)) {
                     return true;
                 }

@@ -54,3 +54,6 @@ runTest(path.join(__dirname, 'fixtures', 'bare.txt'), mdIt().use(mdk, { enableBa
 runTest(path.join(__dirname, 'fixtures', 'math-in-html.txt'), mdIt({ html: true }).use(mdk, { enableMathBlockInHtml: true, enableMathInlineInHtml: true }));
 
 runTest(path.join(__dirname, 'fixtures', 'fence.txt'), mdIt({ html: true }).use(mdk, { enableFencedBlocks: true }));
+
+// Load custom delimiter tests
+require('./custom-delimiters.js');
