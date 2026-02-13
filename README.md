@@ -54,6 +54,27 @@ If you're using the default markdown-it parser, I also recommend the [github sty
 md.use(mk, { throwOnError: false, errorColor: " #cc0000" });
 ```
 
+### Supported Math Delimiters
+
+By default, the following delimiters are supported:
+
+- Inline math: `$...$` and `\(...\)`
+- Display (block) math: `$$...$$` and `\[...\]`
+
+You can customize the delimiters by providing a `delimiters` option:
+
+```javascript
+md.use(mk, {
+  delimiters: [
+    { left: "$$", right: "$$", display: true },
+    { left: "$", right: "$", display: false },
+    // Add custom delimiters
+    { left: "\\[", right: "\\]", display: true },
+    { left: "\\(", right: "\\)", display: false }
+  ]
+});
+```
+
 ## Examples
 
 ### Inline
@@ -62,6 +83,12 @@ Surround your LaTeX with a single `$` on each side for inline rendering.
 
 ```latex
 $\sqrt{3x-1}+(1+x)^2$
+```
+
+You can also use `\(` and `\)` for inline math:
+
+```latex
+\(E = mc^2\)
 ```
 
 ### Block
@@ -80,6 +107,14 @@ $$\begin{array}{c}
 \nabla \cdot \vec{\mathbf{B}} & = 0
 
 \end{array}$$
+```
+
+You can also use `\[` and `\]` for block math:
+
+```latex
+\[
+x = \frac{-b \pm \sqrt{b^2 - 4ac}}{2a}
+\]
 ```
 
 ### Using your own version of KaTeX
