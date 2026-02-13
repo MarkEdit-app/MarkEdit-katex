@@ -677,8 +677,8 @@ export default function (md: import('markdown-it'), options?: MarkdownKatexOptio
     const delimiters = options?.delimiters ?? DEFAULT_DELIMITERS;
 
     // #region Parsing
-    // Register inline parsers BEFORE escape rule to handle delimiters that contain backslashes
-    // This allows support for various delimiter formats like \(, \f$, etc.
+    // Register inline parsers BEFORE escape rule
+    // This ensures all delimiter types work correctly, including those with backslashes
     const sortedDelimiters = [...delimiters].sort((a, b) => b.left.length - a.left.length);
     
     // Check which special delimiters are in the list
@@ -721,7 +721,7 @@ export default function (md: import('markdown-it'), options?: MarkdownKatexOptio
             return true;
         }
         
-        // Try each custom display delimiter (excluding $$)
+        // Try each custom display delimiter
         for (const delim of sortedDelimiters) {
             // Skip $$ delimiter - it has a special handler below
             if (delim.left === '$$' && delim.display) {
