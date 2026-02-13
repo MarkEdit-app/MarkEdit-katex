@@ -1,6 +1,23 @@
 import type MarkdownIt from 'markdown-it';
 import Katex from "katex"
 
+export interface MathDelimiter {
+    /**
+     * Opening delimiter string
+     */
+    readonly left: string;
+    
+    /**
+     * Closing delimiter string
+     */
+    readonly right: string;
+    
+    /**
+     * Whether this delimiter represents a display (block) math expression
+     */
+    readonly display: boolean;
+}
+
 export interface MarkdownKatexOptions {
     /**
      * Enable rendering of bare `\begin` `\end` blocks without `$$` delimiters.
@@ -37,6 +54,13 @@ export interface MarkdownKatexOptions {
      * Support for custom katex instance for extension such as mhchem 
      */
     katex?: typeof Katex
+    
+    /**
+     * Custom math delimiters. If not provided, defaults to:
+     * - Inline: $...$, \(...\)
+     * - Display: $$...$$, \[...\]
+     */
+    delimiters?: MathDelimiter[];
 }
 
 export default function (md: MarkdownIt, options?: MarkdownKatexOptions): MarkdownIt;
