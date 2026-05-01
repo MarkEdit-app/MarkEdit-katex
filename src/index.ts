@@ -266,11 +266,17 @@ function genericBlockMath(
     // Check for single line expressions
     if (firstLine.includes(closeDelim)) {
         const closePos = firstLine.indexOf(closeDelim);
-        if (closePos !== -1 && closePos === firstLine.length - closeDelim.length) {
-            // Single line block expression like \[x\] or $$x$$
-            // Preserve spacing behavior like the original - trim then slice
-            firstLine = firstLine.trim().slice(0, -closeDelim.length);
-            
+        // Allow trailing whitespace after the closing delimiter, but do not
+        // strip whitespace that is part of the delimiter itself.
+        const afterClose = firstLine.slice(closePos + closeDelim.length);
+        if (/^\s*$/.test(afterClose)) {
+            // Single line block expression like \[x\] or $$x$$.
+            // Extract content using closePos (computed against the original
+            // firstLine) so that whitespace inside `closeDelim` is preserved.
+            // Then strip leading whitespace to match the original behavior of
+            // `firstLine.trim().slice(0, -closeDelim.length)`.
+            firstLine = firstLine.slice(0, closePos).replace(/^\s+/, '');
+
             if (silent) {
                 return true;
             }
@@ -360,7 +366,9 @@ function blockMath(state: StateBlock, start: number, end: number, silent: boolea
 
     // Check for single line expressions such as `$$x$$`
     const endIndexes = [...firstLine.matchAll(/\$\$/g)];
-    if (endIndexes.length === 1 && endIndexes[0].index === firstLine.length - 2) {
+    // Allow trailing whitespace after the closing `$$`
+    const trimmedEndLength = firstLine.replace(/\s+$/, '').length;
+    if (endIndexes.length === 1 && endIndexes[0].index === trimmedEndLength - 2) {
         // Fake inline expression such as `$$x$$`
         // We actually want to treat this as a block instead of inline
         firstLine = firstLine.trim().slice(0, -2);
@@ -680,18 +688,18 @@ export default function (md: import('markdown-it'), options?: MarkdownKatexOptio
     // Register inline parsers BEFORE escape rule
     // This ensures all delimiter types work correctly, including those with backslashes
     const sortedDelimiters = [...delimiters].sort((a, b) => b.left.length - a.left.length);
-    
+
     // Check which special delimiters are in the list
     const hasDollarDelim = sortedDelimiters.some(d => !d.display && d.left === '$');
     const hasDoubleDollarDelim = sortedDelimiters.some(d => d.display && d.left === '$$');
-    
+
     let delimiterIndex = 0;
     for (const delim of sortedDelimiters) {
         // Skip $ and $$ delimiters - they have special handlers registered later
         if ((delim.left === '$' && !delim.display) || (delim.left === '$$' && delim.display)) {
             continue;
         }
-        
+
         if (!delim.display) {
             // Register all inline delimiters (not just backslash ones) before escape
             // to support various delimiter formats (e.g., \(, \f$, $`, etc.)
@@ -701,17 +709,17 @@ export default function (md: import('markdown-it'), options?: MarkdownKatexOptio
             });
         }
     }
-    
+
     // Register $ and $$ parsers if they're in the delimiter list
     // These have special validation logic
-    
+
     if (hasDollarDelim) {
         md.inline.ruler.after('escape', 'math_inline', inlineMath);
     }
     if (hasDoubleDollarDelim) {
         md.inline.ruler.after('escape', 'math_inline_block', inlineMathBlock);
     }
-    
+
     if (enableBareBlocks) {
         md.inline.ruler.before('text', 'math_inline_bare_block', inlineBareBlock);
     }
@@ -720,21 +728,21 @@ export default function (md: import('markdown-it'), options?: MarkdownKatexOptio
         if (enableBareBlocks && blockBareMath(state, start, end, silent)) {
             return true;
         }
-        
+
         // Try each custom display delimiter
         for (const delim of sortedDelimiters) {
             // Skip $$ delimiter - it has a special handler below
             if (delim.left === '$$' && delim.display) {
                 continue;
             }
-            
+
             if (delim.display) {
                 if (genericBlockMath(state, start, end, silent, delim.left, delim.right)) {
                     return true;
                 }
             }
         }
-        
+
         // Use blockMath for $$ if it's in the delimiter list
         if (hasDoubleDollarDelim) {
             return blockMath(state, start, end, silent);
