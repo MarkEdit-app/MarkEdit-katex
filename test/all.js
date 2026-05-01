@@ -27,9 +27,9 @@ function runTest(fixturePath, md) {
 }
 
 /**
- * Replace differences between OS (Linux vs Windows) with stubs as we are not testing those specific 
+ * Replace differences between OS (Linux vs Windows) with stubs as we are not testing those specific
  * values for these tests.
- * 
+ *
  * @param {string} text
  */
 function normalizeWithStub(text) {
@@ -57,3 +57,24 @@ runTest(path.join(__dirname, 'fixtures', 'fence.txt'), mdIt({ html: true }).use(
 
 // Load custom delimiter tests
 require('./custom-delimiters.js');
+
+// Trailing whitespace after a single-line block-math closing delimiter
+// should be tolerated: the rendered output must match the same input
+// without the trailing whitespace, and must never produce a katex-error.
+tape('Block math $$...$$ tolerates trailing whitespace', (t) => {
+	t.plan(2);
+	const md = mdIt().use(mdk);
+	const trimmed = md.render('$$ x = y $$\n');
+	const trailing = md.render('$$ x = y $$  \n');
+	t.equals(trailing, trimmed, 'render should match trimmed input');
+	t.ok(!trailing.includes('katex-error'), 'should not produce a parse error');
+});
+
+tape('Block math \\[...\\] tolerates trailing whitespace', (t) => {
+	t.plan(2);
+	const md = mdIt().use(mdk);
+	const trimmed = md.render('\\[ x = y \\]\n');
+	const trailing = md.render('\\[ x = y \\]  \n');
+	t.equals(trailing, trimmed, 'render should match trimmed input');
+	t.ok(!trailing.includes('katex-error'), 'should not produce a parse error');
+});
