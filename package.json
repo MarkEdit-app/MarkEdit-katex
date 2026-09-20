@@ -9,8 +9,13 @@
         "types.d.ts"
     ],
     "exports": {
-        "import": "./dist/index.js",
-        "require": "./dist/index.js"
+        ".": {
+            "types": "./types.d.ts",
+            "import": "./dist/index.js",
+            "require": "./dist/index.js"
+        },
+        "./types.d.ts": "./types.d.ts",
+        "./dist/index.js.map": "./dist/index.js.map"
     },
     "scripts": {
         "compile": "tsc -p .",
