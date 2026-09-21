@@ -30,6 +30,18 @@ md.use(mk);
 const result = md.render("# Math Rulez! \n  $\\sqrt{3x-1}+(1+x)^2$");
 ```
 
+ES modules use a native default import:
+
+```javascript
+import MarkdownIt from "markdown-it";
+import mk from "markedit-katex";
+
+const md = new MarkdownIt().use(mk);
+```
+
+The ESM build imports KaTeX's ESM entry so bundlers can share it with other
+ESM consumers. CommonJS continues to use `require("markedit-katex").default`.
+
 Include the KaTeX stylesheet in your html:
 
 ```html
@@ -129,7 +141,7 @@ import "katex/contrib/mhchem";
 import "katex/contrib/copy-tex";
 
 const md = new MarkdownIt();
-md.use(mk.default, { katex });
+md.use(mk, { katex });
 
 const result = md.render("# Math Rulez! \n  $\\sqrt{3x-1}+(1+x)^2$");
 const chemResult = md.render("$\\ce{Hg^2+ ->[I-] HgI2 ->[I-] [Hg^{II}I4]^2-}$");
@@ -159,6 +171,9 @@ currently supported functions:
 
 Run `npm run compile` after changing the source or compiler configuration, and
 commit the updated files in `dist/` so Git installs receive the latest build.
+Compilation and `npm run watch` produce both CommonJS and ESM builds, with an
+ESM declaration copied from `types.d.ts`. Both builds include source maps.
+Run `npm test` to check rendering, both package entry points, and their types.
 Run `npm run verify-dist` after compilation to check for modified, deleted, or
 untracked build files. Both CI and the release pipeline run this check.
 Source maps embed the TypeScript source for debugging without shipping `src/`
