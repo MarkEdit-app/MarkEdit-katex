@@ -5,11 +5,16 @@
     "main": "dist/index.js",
     "types": "types.d.ts",
     "files": [
-        "dist/index.js",
+        "dist/*",
         "types.d.ts"
     ],
     "exports": {
-        ".": "./src/index.ts"
+        ".": {
+            "types": "./types.d.ts",
+            "import": "./dist/index.js",
+            "require": "./dist/index.js"
+        },
+        "./types.d.ts": "./types.d.ts"
     },
     "scripts": {
         "compile": "tsc -p .",
