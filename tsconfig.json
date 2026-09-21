@@ -7,7 +7,8 @@
         "allowSyntheticDefaultImports": true,
         "rootDir": "src",
         "outDir": "dist",
-        "sourceMap": true
+        "sourceMap": true,
+        "inlineSources": true
     },
     "include": [
         "src/**/*.ts",

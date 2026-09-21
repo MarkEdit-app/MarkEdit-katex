@@ -154,3 +154,10 @@ KaTeX is based on TeX and LaTeX. Support for both is growing. Here's a list of
 currently supported functions:
 
 [Things that KaTeX does not (yet) support](https://github.com/KaTeX/KaTeX/wiki/Things-that-KaTeX-does-not-%28yet%29-support)
+
+## Development
+
+Run `npm run compile` after changing the source or compiler configuration, and
+commit the updated files in `dist/` so Git installs receive the latest build.
+CI checks that the committed build matches the source. Source maps embed the
+TypeScript source for debugging without shipping `src/` separately.
