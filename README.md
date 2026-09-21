@@ -154,3 +154,13 @@ KaTeX is based on TeX and LaTeX. Support for both is growing. Here's a list of
 currently supported functions:
 
 [Things that KaTeX does not (yet) support](https://github.com/KaTeX/KaTeX/wiki/Things-that-KaTeX-does-not-%28yet%29-support)
+
+## Development
+
+Run `npm run compile` after changing the source or compiler configuration, and
+commit the updated files in `dist/` so Git installs receive the latest build.
+Run `npm run verify-dist` after compilation to check for modified, deleted, or
+untracked build files. Both CI and the release pipeline run this check.
+Source maps embed the TypeScript source for debugging without shipping `src/`
+separately. Source files use LF line endings on all platforms so the embedded
+source remains reproducible.

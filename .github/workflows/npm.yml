@@ -22,6 +22,8 @@ jobs:
           node-version: ${{ matrix.node-version }}
       - run: npm install
       - run: npm run compile
+      - name: Verify committed build is up to date
+        run: npm run verify-dist
       - run: npm test
         env:
           CI: true

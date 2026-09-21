@@ -18,6 +18,7 @@
     },
     "scripts": {
         "compile": "tsc -p .",
+        "verify-dist": "node build/verify-dist.js",
         "watch": "tsc -p . -watch",
         "test": "node test/all.js",
         "test-render": "node test/test-render.js test/test.md > test/out.html"

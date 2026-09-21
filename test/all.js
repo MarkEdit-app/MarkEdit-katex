@@ -1,4 +1,5 @@
 const path = require('path');
+const fs = require('fs');
 const tape = require('tape');
 const testLoad = require('markdown-it-testgen').load;
 const mdk = require('../dist/index').default;
@@ -11,18 +12,21 @@ const mdIt = require('markdown-it');
 function runTest(fixturePath, md) {
 	testLoad(fixturePath, (/** @type {{ fixtures: any[]; }} */ data) => {
 		data.fixtures.forEach((fixture) => {
-
-			// generic test definition code using tape
-			tape(fixture.header, (t) => {
-				t.plan(1);
-
-				// Replace nbps with actual space
-				const expected = normalizeWithStub(fixture.second.text).normalize().replaceAll('\u00A0', ' ');
-				const actual = normalizeWithStub(md.render(fixture.first.text)).normalize().replaceAll('\u00A0', ' ');
-
-				t.equals(actual, expected);
-			});
+			runFixture(fixture, md);
 		});
+	});
+}
+
+/**
+ * @param {{ header: string, first: { text: string }, second: { text: string } }} fixture
+ * @param {mdIt} md
+ */
+function runFixture(fixture, md) {
+	tape(fixture.header, (t) => {
+		t.plan(1);
+		const expected = normalizeWithStub(fixture.second.text).normalize().replaceAll('\u00A0', ' ');
+		const actual = normalizeWithStub(md.render(fixture.first.text)).normalize().replaceAll('\u00A0', ' ');
+		t.equals(actual, expected);
 	});
 }
 
@@ -54,6 +58,16 @@ runTest(path.join(__dirname, 'fixtures', 'bare.txt'), mdIt().use(mdk, { enableBa
 runTest(path.join(__dirname, 'fixtures', 'math-in-html.txt'), mdIt({ html: true }).use(mdk, { enableMathBlockInHtml: true, enableMathInlineInHtml: true }));
 
 runTest(path.join(__dirname, 'fixtures', 'fence.txt'), mdIt({ html: true }).use(mdk, { enableFencedBlocks: true }));
+
+const customFixturePath = path.join(__dirname, 'fixtures', 'custom-delimiters.txt');
+const customFixtureLines = fs.readFileSync(customFixturePath, 'utf8').split(/\r?\n/);
+testLoad(customFixturePath, (/** @type {{ fixtures: { header: string, first: { text: string }, second: { text: string, range: number[] } }[] }} */ data) => {
+	data.fixtures.forEach((fixture) => {
+		// Each custom fixture stores its plugin options after the closing separator.
+		const options = JSON.parse(customFixtureLines[fixture.second.range[1] + 1]);
+		runFixture(fixture, mdIt({ html: true }).use(mdk, options));
+	});
+});
 
 // Load custom delimiter tests
 require('./custom-delimiters.js');
