@@ -33,6 +33,9 @@ extends:
           - script: npm run compile
             displayName: Compile
 
+          - script: npm run verify-dist
+            displayName: Verify committed build is up to date
+
         testPlatforms:
           - name: Linux
             nodeVersions:
@@ -58,6 +61,9 @@ extends:
             displayName: Compile npm package
             env:
               DISPLAY: ':99.0'
+
+          - script: npm run verify-dist
+            displayName: Verify committed build is up to date
 
           - script: npm run test
             displayName: Test npm package

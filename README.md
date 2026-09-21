@@ -159,5 +159,8 @@ currently supported functions:
 
 Run `npm run compile` after changing the source or compiler configuration, and
 commit the updated files in `dist/` so Git installs receive the latest build.
-CI checks that the committed build matches the source. Source maps embed the
-TypeScript source for debugging without shipping `src/` separately.
+Run `npm run verify-dist` after compilation to check for modified, deleted, or
+untracked build files. Both CI and the release pipeline run this check.
+Source maps embed the TypeScript source for debugging without shipping `src/`
+separately. Source files use LF line endings on all platforms so the embedded
+source remains reproducible.

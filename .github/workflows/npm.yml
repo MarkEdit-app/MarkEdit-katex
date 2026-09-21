@@ -23,7 +23,7 @@ jobs:
       - run: npm install
       - run: npm run compile
       - name: Verify committed build is up to date
-        run: git diff --exit-code -- dist
+        run: npm run verify-dist
       - run: npm test
         env:
           CI: true
