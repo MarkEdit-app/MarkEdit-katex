@@ -1,5 +1,8 @@
 # Changelog
 
+# 1.1.8 — October 8, 2026
+- Upgrade the default KaTeX dependency to 0.19 so consumers using KaTeX 0.19 can share the same renderer.
+
 # 1.1.2 — July 7, 2025
 - Fix parsing of multiple inline `$$` blocks on a single line.
 

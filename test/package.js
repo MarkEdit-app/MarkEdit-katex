@@ -13,6 +13,14 @@ async function main() {
     assert.equal(typeof esm, 'function');
     assert.equal(require.resolve('markedit-katex'), path.resolve(__dirname, '../dist/index.js'));
 
+    for (const [format, plugin] of [['CommonJS', cjs], ['ESM', esm]]) {
+        for (const markdown of ['$\\reflectbox{R}$', '$$\\reflectbox{R}$$']) {
+            const html = new MarkdownIt().use(plugin).render(markdown);
+            assert.match(html, /class="[^"]*\breflectbox\b/, `${format} uses KaTeX 0.19 by default`);
+            assert.doesNotMatch(html, /katex-error/);
+        }
+    }
+
     const fixtureOptions = {
         default: {},
         delimiters: {},

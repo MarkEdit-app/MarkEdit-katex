@@ -42,12 +42,12 @@ const md = new MarkdownIt().use(mk);
 The ESM build imports KaTeX's ESM entry so bundlers can share it with other
 ESM consumers. CommonJS continues to use `require("markedit-katex").default`.
 
-Include the KaTeX stylesheet in your html:
+Include the KaTeX stylesheet in your html, matching the version of the renderer:
 
 ```html
 <link
   rel="stylesheet"
-  href="https://cdn.jsdelivr.net/npm/katex@0.16.4/dist/katex.min.css"
+  href="https://cdn.jsdelivr.net/npm/katex@0.19.0/dist/katex.min.css"
 />
 ```
 
